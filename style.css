@@ -1,4 +1,4 @@
-/* Fichier CSS amélioré pour le site FREEFLIX - style.css */
+/* Fichier CSS mis à jour pour le site FREEFLIX - style.css */
 
 body {
     background-color: #141414;
@@ -90,7 +90,7 @@ h1 {
 
 .result-item h2 {
     font-family: 'Oswald', sans-serif;
-    color: #e50914;
+    color: #ffffff;
     margin-bottom: 12px;
     font-size: 1.5rem;
 }
@@ -166,6 +166,14 @@ h1 {
     background-color: #ffa500;
 }
 
+.tag.release {
+    background-color: #32cd32;
+}
+
+.tag.upcoming {
+    background-color: #ff4500;
+}
+
 #notification {
     display: none;
     position: fixed;
@@ -179,6 +187,36 @@ h1 {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     font-size: 0.9rem;
     z-index: 1000;
+}
+
+.tag.is-released {
+    background-color: #32cd32;
+    color: #fff;
+}
+
+.tag.not-released {
+    background-color: #ff4500;
+    color: #fff;
+}
+
+footer {
+    background-color: #1c1c1c;
+    color: #e5e5e5;
+    padding: 20px 0;
+    text-align: center;
+    border-top: 2px solid #e50914;
+    margin-top: 40px;
+}
+
+footer a {
+    color: #f40612;
+    text-decoration: none;
+    margin: 0 10px;
+    transition: color 0.3s;
+}
+
+footer a:hover {
+    color: #fff;
 }
 
 @media (max-width: 768px) {

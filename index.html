@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 
@@ -28,6 +27,13 @@
         <div id="errorNotification" class="text-center text-danger mt-3" style="display: none;">Erreur lors de l'envoi de la suggestion. Veuillez réessayer.</div>
     </div>
 
+    <footer class="text-center mt-5 py-3">
+        <p>© 2024 FREEFLIX. Tous droits réservés.</p>
+        <p>
+            <a href="https://www.freeflix-streaming.fr" class="text-decoration-none">Site principal</a> |
+            <a href="https://discord.gg/xRr3aB8xW5" class="text-decoration-none">Serveur Discord</a>
+        </p>
+    </footer>
     <script>
         const apiKey = '111c88a4bbb837b13e8e1491e3ac603a';
         const webhookUrl = 'https://discord.com/api/webhooks/1302054891031892050/uHVeGNUl6kh6yvhMFQ-f27uk6T7ryMVgFg2qLXru6m_g37WrmKpvUG6PXVBeWCHeMvpR';
@@ -66,6 +72,9 @@
                     const tmdbLink = `https://www.themoviedb.org/${item.media_type}/${item.id}`;
                     const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
                     const typeLabel = item.media_type === 'movie' ? 'Film' : item.media_type === 'tv' ? 'Série' : 'Animé';
+                    const releaseDate = item.release_date || item.first_air_date || null;
+                    const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'À venir';
+                    const isReleased = releaseDate && new Date(releaseDate) <= new Date();
 
                     const resultDiv = document.createElement('div');
                     resultDiv.classList.add('result-item');
@@ -77,7 +86,8 @@
                             </a>
                             <div class="tags">
                                 <span class="tag" style="background-color: #1e90ff;">${typeLabel}</span>
-                                <span class="tag" style="background-color: #ffa500;">Note TMDB : ${rating}/10</span>
+                                <span class="tag ${isReleased ? 'is-released' : 'not-released'}">${isReleased ? `Sorti en ${releaseYear}` : 'À venir'}</span>
+                                <span class="tag note">Note TMDB : ${rating}/10</span>
                             </div>
                             <p>${overview}</p>
                             <button class="btn btn-suggest" onclick="sendSuggestion('${title.replace(/'/g, "\'")}', '${typeLabel}', '${tmdbLink}', '${backdropPath}', '${rating}')" ${isSending ? 'disabled' : ''}>Suggérer cet ajout</button>
