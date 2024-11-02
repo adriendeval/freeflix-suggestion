@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREEFLIX - Suggestions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #notification {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1e90ff;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-size: 0.9rem;
+    z-index: 1000;
+}
+    </style>
+</head>
+
+<body>
+    <nav class="d-flex justify-content-between align-items-center">
+        <a href="https://www.freeflix-streaming.fr" style="outline: none; text-decoration: none; color: #e5e5e5;"><i class="fas fa-home"></i> Retour au site principal</a>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Suggérer un Film, une Série ou un Animé</h1>
+        <div class="row justify-content-center mb-3">
+            <div class="col-md-8">
+                <input type="text" id="searchInput" class="form-control search-bar" placeholder="Rechercher sur TMDB...">
+            </div>
+        </div>
+        <div class="results mt-4" id="resultsContainer"></div>
+        <div id="notification">Suggestion envoyée avec succès !</div>
+    </div>
+
+    <script>
+        const apiKey = '111c88a4bbb837b13e8e1491e3ac603a';
+        const webhookUrl = 'https://discord.com/api/webhooks/1302054891031892050/uHVeGNUl6kh6yvhMFQ-f27uk6T7ryMVgFg2qLXru6m_g37WrmKpvUG6PXVBeWCHeMvpR';
+
+        document.getElementById('searchInput').addEventListener('input', fetchResults);
+
+        async function fetchResults() {
+            const query = document.getElementById('searchInput').value.trim();
+
+            if (query.length > 2) {
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=fr`;
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Erreur lors de la récupération des données');
+                    const data = await response.json();
+                    const filteredResults = data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv' || item.original_language === 'ja');
+                    displayResults(filteredResults);
+                } catch (error) {
+                    document.getElementById('resultsContainer').innerHTML = '<p class="text-center text-danger">Une erreur s\'est produite lors de la recherche. Veuillez réessayer.</p>';
+                }
+            } else {
+                document.getElementById('resultsContainer').innerHTML = '<p class="text-center">Veuillez entrer un terme de recherche.</p>';
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            if (results && results.length > 0) {
+                results.forEach(item => {
+                    const title = item.title || item.name || 'Titre inconnu';
+                    const overview = item.overview || 'Pas de description disponible';
+                    const backdropPath = item.backdrop_path ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}` : '';
+                    const tmdbLink = `https://www.themoviedb.org/${item.media_type}/${item.id}`;
+                    const rating = item.vote_average ? (item.vote_average / 10 * 10).toFixed(1) : 'N/A';
+                    const typeLabel = item.media_type === 'movie' ? 'Film' : item.media_type === 'tv' ? 'Série' : 'Animé';
+
+                    const resultDiv = document.createElement('div');
+                    resultDiv.classList.add('result-item');
+                    resultDiv.innerHTML = `
+                        ${backdropPath ? `<img src="${backdropPath}" alt="${title}" class="backdrop">` : ''}
+                        <div class="result-content">
+                            <a href="${tmdbLink}" target="_blank" style="outline: none; text-decoration: none; color: #fff;">
+                                <h2 style="color: #fff;">${title}</h2>
+                            </a>
+                            <div class="tags">
+                                <span class="tag serie" style="background-color: #1e90ff; color: #fff;">${typeLabel}</span>
+                                <span class="tag note" style="background-color: #ffa500; color: #fff;">Note TMDB : ${rating}/10</span>
+                            </div>
+                            <p>${overview}</p>
+                            <button class="btn btn-suggest" onclick="sendSuggestion('${title}', '${typeLabel}', '${tmdbLink}', '${overview}', '${rating}')">Suggérer cet ajout</button>
+                        </div>
+                    `;
+                    container.appendChild(resultDiv);
+                });
+            } else {
+                container.innerHTML = '<p class="text-center">Aucun résultat trouvé.</p>';
+            }
+        }
+
+        async function sendSuggestion(title, typeLabel, tmdbLink, overview, rating) {
+            const embedMessage = {
+                embeds: [
+                    {
+                        title: title,
+                        description: overview,
+                        url: tmdbLink,
+                        color: 15158332,
+                        fields: [
+                            {
+                                name: 'Type',
+                                value: typeLabel,
+                                inline: true
+                            },
+                            {
+                                name: 'Note TMDB',
+                                value: `${rating}/10`,
+                                inline: true
+                            }
+                        ],
+                        footer: {
+                            text: 'Suggestion ajoutée via FREEFLIX'
+                        }
+                    }
+                ]
+            };
+
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(embedMessage)
+                });
+                showNotification();
+            } catch (error) {
+                alert('Erreur lors de l\'envoi de la suggestion.');
+            }
+        }
+
+        function showNotification() {
+            const notification = document.getElementById('notification');
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
