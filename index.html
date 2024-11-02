@@ -8,27 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
-    <style>
-        #notification {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #1e90ff;
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    font-size: 0.9rem;
-    z-index: 1000;
-}
-    </style>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
     <nav class="d-flex justify-content-between align-items-center">
-        <a href="https://www.freeflix-streaming.fr" style="outline: none; text-decoration: none; color: #e5e5e5;"><i class="fas fa-home"></i> Retour au site principal</a>
+        <a href="https://www.freeflix-streaming.fr" class="text-decoration-none text-white"><i class="fas fa-home"></i> Retour au site principal</a>
     </nav>
     <div class="container">
         <h1 class="text-center">Suggérer un Film, une Série ou un Animé</h1>
@@ -39,11 +24,13 @@
         </div>
         <div class="results mt-4" id="resultsContainer"></div>
         <div id="notification">Suggestion envoyée avec succès !</div>
+        <div id="errorNotification" class="text-center text-danger mt-3" style="display: none;">Erreur lors de l'envoi de la suggestion. Veuillez réessayer.</div>
     </div>
 
     <script>
         const apiKey = '111c88a4bbb837b13e8e1491e3ac603a';
         const webhookUrl = 'https://discord.com/api/webhooks/1302054891031892050/uHVeGNUl6kh6yvhMFQ-f27uk6T7ryMVgFg2qLXru6m_g37WrmKpvUG6PXVBeWCHeMvpR';
+        let isSending = false;
 
         document.getElementById('searchInput').addEventListener('input', fetchResults);
 
@@ -57,7 +44,7 @@
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Erreur lors de la récupération des données');
                     const data = await response.json();
-                    const filteredResults = data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv' || item.original_language === 'ja');
+                    const filteredResults = data.results.filter(item => ['movie', 'tv'].includes(item.media_type) || item.original_language === 'ja');
                     displayResults(filteredResults);
                 } catch (error) {
                     document.getElementById('resultsContainer').innerHTML = '<p class="text-center text-danger">Une erreur s\'est produite lors de la recherche. Veuillez réessayer.</p>';
@@ -70,13 +57,13 @@
         function displayResults(results) {
             const container = document.getElementById('resultsContainer');
             container.innerHTML = '';
-            if (results && results.length > 0) {
+            if (results.length > 0) {
                 results.forEach(item => {
                     const title = item.title || item.name || 'Titre inconnu';
-                    const overview = item.overview || 'Pas de description disponible';
+                    const overview = item.overview ? item.overview : 'Pas de description disponible';
                     const backdropPath = item.backdrop_path ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}` : '';
                     const tmdbLink = `https://www.themoviedb.org/${item.media_type}/${item.id}`;
-                    const rating = item.vote_average ? (item.vote_average / 10 * 10).toFixed(1) : 'N/A';
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
                     const typeLabel = item.media_type === 'movie' ? 'Film' : item.media_type === 'tv' ? 'Série' : 'Animé';
 
                     const resultDiv = document.createElement('div');
@@ -84,15 +71,15 @@
                     resultDiv.innerHTML = `
                         ${backdropPath ? `<img src="${backdropPath}" alt="${title}" class="backdrop">` : ''}
                         <div class="result-content">
-                            <a href="${tmdbLink}" target="_blank" style="outline: none; text-decoration: none; color: #fff;">
-                                <h2 style="color: #fff;">${title}</h2>
+                            <a href="${tmdbLink}" target="_blank" class="text-decoration-none text-white">
+                                <h2>${title}</h2>
                             </a>
                             <div class="tags">
-                                <span class="tag serie" style="background-color: #1e90ff; color: #fff;">${typeLabel}</span>
-                                <span class="tag note" style="background-color: #ffa500; color: #fff;">Note TMDB : ${rating}/10</span>
+                                <span class="tag" style="background-color: #1e90ff;">${typeLabel}</span>
+                                <span class="tag" style="background-color: #ffa500;">Note TMDB : ${rating}/10</span>
                             </div>
                             <p>${overview}</p>
-                            <button class="btn btn-suggest" onclick="sendSuggestion('${title}', '${typeLabel}', '${tmdbLink}', '${overview}', '${rating}')">Suggérer cet ajout</button>
+                            <button class="btn btn-suggest" onclick="sendSuggestion('${title.replace(/'/g, "\'")}', '${typeLabel}', '${tmdbLink}', '${backdropPath}', '${rating}')" ${isSending ? 'disabled' : ''}>Suggérer cet ajout</button>
                         </div>
                     `;
                     container.appendChild(resultDiv);
@@ -102,45 +89,77 @@
             }
         }
 
-        async function sendSuggestion(title, typeLabel, tmdbLink, overview, rating) {
+        async function sendSuggestion(title, typeLabel, tmdbLink, backdropPath, rating) {
+            if (isSending) return;
+            isSending = true;
+            disableButtons(true);
+
             const embedMessage = {
+                username: 'FREEFLIX Bot',
+                avatar_url: 'https://example.com/avatar.png',
                 embeds: [
                     {
                         title: title,
-                        description: overview,
                         url: tmdbLink,
                         color: 15158332,
+                        image: {
+                            url: backdropPath || 'https://example.com/default-image.png'
+                        },
                         fields: [
                             {
                                 name: 'Type',
                                 value: typeLabel,
                                 inline: true
-                            },
-                            {
-                                name: 'Note TMDB',
-                                value: `${rating}/10`,
-                                inline: true
                             }
                         ],
                         footer: {
-                            text: 'Suggestion ajoutée via FREEFLIX'
-                        }
+                            text: `Note TMDB : ${rating}/10`
+                        },
+                        timestamp: new Date().toISOString()
                     }
                 ]
             };
 
+            const timeout = setTimeout(() => {
+                isSending = false;
+                disableButtons(false);
+                document.getElementById('errorNotification').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('errorNotification').style.display = 'none';
+                }, 5000);
+            }, 15000);
+
             try {
-                await fetch(webhookUrl, {
+                const response = await fetch(webhookUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(embedMessage)
                 });
-                showNotification();
+                clearTimeout(timeout);
+
+                if (response.ok) {
+                    showNotification();
+                } else {
+                    throw new Error('Échec de l\'envoi');
+                }
             } catch (error) {
-                alert('Erreur lors de l\'envoi de la suggestion.');
+                clearTimeout(timeout);
+                document.getElementById('errorNotification').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('errorNotification').style.display = 'none';
+                }, 5000);
+            } finally {
+                isSending = false;
+                disableButtons(false);
             }
+        }
+
+        function disableButtons(disable) {
+            document.querySelectorAll('.btn-suggest').forEach(button => {
+                button.disabled = disable;
+            });
         }
 
         function showNotification() {
