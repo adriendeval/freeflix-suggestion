@@ -5,4 +5,4 @@
 2. Cliquez sur **Suggérer cet ajout**
 3. Votre suggestion a été envoyée et nous allons l'examiner puis l'ajouter
 
-Site : [request.freeflix-streaming.fr](https://request.freeflix-streaming.fr)
+Site : [adriendeval.github.io/freeflix-suggestion](https://adriendeval.github.io/freeflix-suggestion/)
